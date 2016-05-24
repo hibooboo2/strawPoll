@@ -12,9 +12,10 @@
 			inputForOption.setAttribute("name", "option")
 			inputForOption.setAttribute("placeholder", "Enter poll option...")
 			inputForOption.onfocus = newOption
-			inputForOption.
 			anOption.appendChild(inputForOption)
-			options.childNodes[options.childNodes.length-2].setAttribute("onfocus", null)
+			document.getElementById("lastInput").setAttribute("onfocus", null)
+			document.getElementById("lastInput").setAttribute("id", null)
+			inputForOption.setAttribute("id", "lastInput")
 			options.appendChild(anOption)
 
 		}
@@ -33,7 +34,7 @@
 					<input type="text" name="option" placeholder="Enter poll option...">
 				</li>
 				<li>
-		 			<input type="text" name="option" placeholder="Enter poll option..." onfocus="newOption()">
+		 			<input type="text" name="option" placeholder="Enter poll option..." onfocus="newOption()" id="lastInput">
 		 		</li>	
 			</ul>
 			<button type="submit"></button>
