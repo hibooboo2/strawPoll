@@ -8,11 +8,11 @@
 	<h1>{{.Question}}</h1>
 	<ul>
 		{{if .Answers}}
-			{{range .Answers}}
-			<li>
-				<input type="radio" name="{{.}}" /> {{.}} 
-			</li>
-			{{end}}
+				{{range .Answers}}
+					<li>
+						<input type="radio" name="Answer" value="{{.}}" />  {{.}}
+					</li>
+				{{end}}
 		{{end}}
 	</ul>
 </body>
