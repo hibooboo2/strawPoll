@@ -6,7 +6,9 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", makePoll)
+	http.HandleFunc("/poll/", viewPoll)
+	http.HandleFunc("/poll/r/", pollResults)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -18,6 +20,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		Answers:  []string{"x", "y"},
 	}
 	t.ExecuteTemplate(w, "main", aPoll) // merge.
+}
+
+func viewPoll(rw http.ResponseWriter, req *http.Request) {
+
+}
+
+func pollResults(rw http.ResponseWriter, req *http.Request) {
+
+}
+
+func makePoll(rw http.ResponseWriter, req *http.Request) {
+
 }
 
 type Poll struct {
