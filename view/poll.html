@@ -1,0 +1,20 @@
+{{define "poll"}}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ .Question }}</title>
+</head>
+<body>
+	<h1>{{.Question}}</h1>
+	<ul>
+		{{if .Answers}}
+			{{range .Answers}}
+			<li>
+				<input type="radio" name="{{.}}" /> {{.}} 
+			</li>
+			{{end}}
+		{{end}}
+	</ul>
+</body>
+</html>
+{{end}}

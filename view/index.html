@@ -1,0 +1,43 @@
+{{define "main"}}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>A question</title>
+	<script type="text/javascript">
+		function newOption(){
+			options = document.getElementById("options")
+			anOption = document.createElement("li")
+			inputForOption = document.createElement("input")
+			inputForOption.setAttribute("type", "text")
+			inputForOption.setAttribute("name", "option")
+			inputForOption.setAttribute("placeholder", "Enter poll option...")
+			inputForOption.onfocus = newOption
+			inputForOption.
+			anOption.appendChild(inputForOption)
+			options.childNodes[options.childNodes.length-2].setAttribute("onfocus", null)
+			options.appendChild(anOption)
+
+		}
+	</script>
+</head>
+<body>
+		
+		<form action="/newpoll/" method="post" enctype="form-data">
+			<input type="text" name="question" placeholder="Type question here, options below.">
+			<br/>
+			<ul id="options">
+				<li>
+					<input type="text" name="option" placeholder="Enter poll option...">
+				</li>
+				<li>
+					<input type="text" name="option" placeholder="Enter poll option...">
+				</li>
+				<li>
+		 			<input type="text" name="option" placeholder="Enter poll option..." onfocus="newOption()">
+		 		</li>	
+			</ul>
+			<button type="submit"></button>
+		</form>
+</body>
+</html>
+{{end}}
