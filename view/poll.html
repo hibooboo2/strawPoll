@@ -6,15 +6,18 @@
 </head>
 <body>
 	<h1>{{.Question}}</h1>
-	<ul>
-		{{if .Answers}}
-				{{range .Answers}}
-					<li>
-						<input type="radio" name="Answer" value="{{.}}" />  {{.}}
-					</li>
-				{{end}}
-		{{end}}
-	</ul>
+	<form action="/poll/{{.Id}}/vote/" method="post" enctype="form-data">
+		<ul>
+			{{if .Answers}}
+					{{range .Answers}}
+						<li>
+							<input type="radio" name="Answer" value="{{.Value}}" />  {{.Value}}
+						</li>
+					{{end}}
+			{{end}}
+		</ul>
+		<button type="submit">Vote!</button>
+	</form>
 </body>
 </html>
 {{end}}
