@@ -26,8 +26,13 @@
     </script>
 </head>
 <body>
+		{{if .AlreadyVoted}}
+		<h1>You already voted. Cannot vote twice from same IP. {{.IP}}</h1>
+		{{end}}
 		<div id="piechart" style="width: 900px; height: 500px;"></div>
 		<a href="/poll/{{.Id}}/">Vote</a>
+		<br/>
+    	PerIPBlock: {{.PerIp}}
 </body>
 </html>
 {{end}}

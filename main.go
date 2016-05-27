@@ -41,6 +41,11 @@ func viewPoll(w http.ResponseWriter, req *http.Request) {
 }
 
 func pollResults(w http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err != nil {
+		fmt.Fprintf(w, "Nope dip")
+	}
+
 	t := template.New("baseTemplate")        // Create a template.
 	t, _ = t.ParseFiles("view/results.html") // Parse template file.
 	pollId, err := strconv.Atoi(mux.Vars(req)["id"])
@@ -48,6 +53,13 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	thePoll := polls[pollId]
+	log.Println(req.PostFormValue("alreadyVoted"))
+	thePoll.AlreadyVoted = req.URL.Query().Get("alreadyVoted") == "true"
+	if thePoll.AlreadyVoted {
+		thePoll.IP = req.RemoteAddr
+	} else {
+		thePoll.IP = ""
+	}
 	t.ExecuteTemplate(w, "results", thePoll) // merge.
 }
 
@@ -63,13 +75,20 @@ func votePoll(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic("shit")
 	}
+	if polls[pollId].PerIp && polls[pollId].IPSUsed[req.RemoteAddr] {
+		log.Println("Duped ip: " + req.RemoteAddr)
+		http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/?alreadyVoted=true", pollId), http.StatusSeeOther)
+		return
+	}
 	theAnswers := polls[pollId].Answers
 	chosenAnswer := req.PostFormValue("Answer")
-	print(chosenAnswer)
 	for _, ans := range theAnswers {
 		if ans.Value == chosenAnswer {
 			ans.Total = ans.Total + 1
 		}
+	}
+	if polls[pollId].PerIp {
+		polls[pollId].IPSUsed[req.RemoteAddr] = true
 	}
 	http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/", pollId), http.StatusSeeOther)
 }
@@ -84,6 +103,8 @@ func newPoll(w http.ResponseWriter, req *http.Request) {
 	aPoll := &Poll{
 		Question: req.PostFormValue("question"),
 		Answers:  removeBlanks(req.Form["option"]),
+		IPSUsed:  make(map[string]bool),
+		PerIp:    req.PostFormValue("perIP") == "on",
 	}
 	storePoll(aPoll)
 	http.Redirect(w, req, fmt.Sprintf("/poll/%d/", aPoll.Id), http.StatusSeeOther)
@@ -98,12 +119,15 @@ func makePoll(w http.ResponseWriter, req *http.Request) {
 }
 
 type Poll struct {
-	Question    string
-	Answers     []*Answer
-	Multiselect bool
-	PerIp       bool
-	PerBrowser  bool
-	Id          int
+	Question     string
+	Answers      []*Answer
+	Multiselect  bool
+	PerIp        bool
+	PerBrowser   bool
+	Id           int
+	IPSUsed      map[string]bool
+	AlreadyVoted bool
+	IP           string
 }
 type Answer struct {
 	Value string
