@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -9,6 +10,12 @@ import (
 
 	"github.com/gorilla/mux"
 )
+
+var flagListen = flag.String("l", ":8080", "Used to define which port is listened on.")
+
+func init() {
+	flag.Parse()
+}
 
 func main() {
 	r := mux.NewRouter().StrictSlash(true)
@@ -19,7 +26,7 @@ func main() {
 	r.HandleFunc("/poll/{id:[0-9]+}/r/", pollResults).Methods("GET")
 	http.Handle("/", r)
 	log.Println("server started.")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(*flagListen, nil)
 }
 
 func viewPoll(w http.ResponseWriter, req *http.Request) {
