@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,9 +13,14 @@ import (
 )
 
 var flagListen = flag.String("l", ":8080", "Used to define which port is listened on.")
+var logs = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
 
 func init() {
 	flag.Parse()
+
+	if !*logs {
+		log.SetOutput(ioutil.Discard)
+	}
 }
 
 func main() {
