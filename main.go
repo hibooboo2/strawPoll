@@ -8,7 +8,12 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/codehack/go-relax"
+	"github.com/codehack/go-relax/filter/logs"
+
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 var flagListen = flag.String("l", ":8080", "Used to define which port is listened on.")
@@ -18,7 +23,30 @@ func init() {
 }
 
 func main() {
+	env.config.database.Driver = "postgres"
+	env.config.database.DSN = "postgres://wizardofmath:@localhost:5432/strawpoll?sslmode=disable"
+	env.db = sqlx.MustConnect(env.config.database.Driver, env.config.database.DSN)
+
+	env.svc = relax.NewService("/",
+			CheckArgs: true, DisableAudienceCheck: true})
+	env.svc.Use(&logs.Filter{})
+
 	r := mux.NewRouter().StrictSlash(true)
+	registerRoutes(r)
+}
+
+var env struct {
+	db     *sqlx.DB
+	config struct {
+		database struct {
+			DSN    string
+			Driver string
+		}
+	}
+	svc *relax.Service
+}
+
+func registerRoutes(r *mux.Router) {
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
 	r.HandleFunc("/poll/{id:[0-9]+}/", viewPoll).Methods("GET")
@@ -31,18 +59,21 @@ func main() {
 
 func viewPoll(w http.ResponseWriter, req *http.Request) {
 	log.Println("Viewing poll.")
-
-	t := template.New("baseTemplate")     // Create a template.
-	t, _ = t.ParseFiles("view/poll.html") // Parse template file.
-	pollId, err := strconv.Atoi(mux.Vars(req)["id"])
+	t := template.New("baseTemplate")
+	t, _ = t.ParseFiles("view/poll.html")
+	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		t := template.New("main")              // Create a template.
-		t, _ = t.ParseFiles("view/index.html") // Parse template file.
-		t.ExecuteTemplate(w, "main", nil)      // merge.
+		t := template.New("main")
+		t, _ = t.ParseFiles("view/index.html")
+		t.ExecuteTemplate(w, "main", nil)
 		return
 	}
-	thePoll := polls[pollId]
-	t.ExecuteTemplate(w, "poll", thePoll) // merge.
+	thePoll := &Poll{
+		DBPoll: DBPoll{
+			ID: pollID,
+		},
+	}
+	t.ExecuteTemplate(w, "poll", thePoll)
 	log.Println("Viewed poll.")
 
 }
@@ -53,13 +84,13 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Nope dip")
 	}
 
-	t := template.New("baseTemplate")        // Create a template.
-	t, _ = t.ParseFiles("view/results.html") // Parse template file.
-	pollId, err := strconv.Atoi(mux.Vars(req)["id"])
+	t := template.New("baseTemplate")
+	t, _ = t.ParseFiles("view/results.html")
+	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		return
 	}
-	thePoll := polls[pollId]
+	thePoll := Polls.Get(pollID)
 	log.Println(req.PostFormValue("alreadyVoted"))
 	thePoll.AlreadyVoted = req.URL.Query().Get("alreadyVoted") == "true"
 	if thePoll.AlreadyVoted {
@@ -67,7 +98,7 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 	} else {
 		thePoll.IP = ""
 	}
-	t.ExecuteTemplate(w, "results", thePoll) // merge.
+	t.ExecuteTemplate(w, "results", thePoll)
 }
 
 func votePoll(w http.ResponseWriter, req *http.Request) {
@@ -78,26 +109,26 @@ func votePoll(w http.ResponseWriter, req *http.Request) {
 	}
 
 	vars := mux.Vars(req)
-	pollId, err := strconv.Atoi(vars["id"])
+	pollID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		panic("shit")
 	}
-	if polls[pollId].PerIp && polls[pollId].IPSUsed[req.RemoteAddr] {
+	if Polls.Get(pollID).PerIP && Polls.Get(pollID).IPSUsed[req.RemoteAddr] {
 		log.Println("Duped ip: " + req.RemoteAddr)
-		http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/?alreadyVoted=true", pollId), http.StatusSeeOther)
+		http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/?alreadyVoted=true", pollID), http.StatusSeeOther)
 		return
 	}
-	theAnswers := polls[pollId].Answers
+	theAnswers := Polls.Get(pollID).Answers
 	chosenAnswer := req.PostFormValue("Answer")
 	for _, ans := range theAnswers {
 		if ans.Value == chosenAnswer {
 			ans.Total = ans.Total + 1
 		}
 	}
-	if polls[pollId].PerIp {
-		polls[pollId].IPSUsed[req.RemoteAddr] = true
+	if Polls.Get(pollID).PerIP {
+		Polls.Get(pollID).IPSUsed[req.RemoteAddr] = true
 	}
-	http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/", pollId), http.StatusSeeOther)
+	http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/", pollID), http.StatusSeeOther)
 }
 
 func newPoll(w http.ResponseWriter, req *http.Request) {
@@ -105,40 +136,26 @@ func newPoll(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "Nope dip")
 	}
-	t := template.New("baseTemplate")     // Create a template.
-	t, _ = t.ParseFiles("view/poll.html") // Parse template file.
+	t := template.New("baseTemplate")
+	t, _ = t.ParseFiles("view/poll.html")
 	aPoll := &Poll{
-		Question: req.PostFormValue("question"),
-		Answers:  removeBlanks(req.Form["option"]),
-		IPSUsed:  make(map[string]bool),
-		PerIp:    req.PostFormValue("perIP") == "on",
+		DBPoll: DBPoll{
+			Question: req.PostFormValue("question"),
+			PerIP:    req.PostFormValue("perIP") == "on",
+		},
+		Answers: removeBlanks(req.Form["option"]),
+		IPSUsed: make(map[string]bool),
 	}
 	storePoll(aPoll)
-	http.Redirect(w, req, fmt.Sprintf("/poll/%d/", aPoll.Id), http.StatusSeeOther)
+	http.Redirect(w, req, fmt.Sprintf("/poll/%d/", aPoll.ID), http.StatusSeeOther)
 	log.Println("New poll made")
 
 }
 
 func makePoll(w http.ResponseWriter, req *http.Request) {
-	t := template.New("main")              // Create a template.
-	t, _ = t.ParseFiles("view/index.html") // Parse template file.
-	t.ExecuteTemplate(w, "main", nil)      // merge.
-}
-
-type Poll struct {
-	Question     string
-	Answers      []*Answer
-	Multiselect  bool
-	PerIp        bool
-	PerBrowser   bool
-	Id           int
-	IPSUsed      map[string]bool
-	AlreadyVoted bool
-	IP           string
-}
-type Answer struct {
-	Value string
-	Total int
+	t := template.New("main")
+	t, _ = t.ParseFiles("view/index.html")
+	t.ExecuteTemplate(w, "main", nil)
 }
 
 func removeBlanks(theStrings []string) []*Answer {
@@ -151,10 +168,7 @@ func removeBlanks(theStrings []string) []*Answer {
 	return nonblank
 }
 
-var polls map[int]*Poll = make(map[int]*Poll)
-
 func storePoll(thePoll *Poll) int {
-	thePoll.Id = len(polls)
-	polls[thePoll.Id] = thePoll
-	return thePoll.Id
+	thePoll.Save()
+	return thePoll.ID
 }
