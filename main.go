@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -24,6 +25,7 @@ func init() {
 }
 
 func main() {
+	log.Println(os.Getenv("PORT"))
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
