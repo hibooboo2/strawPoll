@@ -1,1 +1,3 @@
 strawPoll
+vendor/*
+!vendor.json
