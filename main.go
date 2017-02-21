@@ -20,20 +20,18 @@ var logs = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
 
 func init() {
 	flag.Parse()
-
 	if !*logs {
 		log.SetOutput(ioutil.Discard)
 	}
 }
 
 func main() {
-	log.Println("Starting PID:", os.Getpid(), "Current version:", version, os.Args)
+	log.Println("Starting with PID:", os.Getpid(), "Current version:", version, os.Args)
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
-	r.HandleFunc("/kill/", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/restart/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "kill -SIGUSR2 %v", os.Getpid())
-		log.Println("Current PID: ", os.Getpid())
 	})
 	r.HandleFunc("/poll/{id:[0-9]+}/", viewPoll).Methods("GET")
 	r.HandleFunc("/poll/{id:[0-9]+}/vote/", votePoll).Methods("POST")
