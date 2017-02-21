@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/mux"
 )
 
@@ -26,22 +27,23 @@ func init() {
 }
 
 func main() {
+	log.Println("Starting PID:", os.Getpid(), "Current version:", version, os.Args)
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
 	r.HandleFunc("/kill/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		os.Exit(0)
+		fmt.Fprintf(w, "kill -SIGUSR2 %v", os.Getpid())
+		log.Println("Current PID: ", os.Getpid())
 	})
 	r.HandleFunc("/poll/{id:[0-9]+}/", viewPoll).Methods("GET")
 	r.HandleFunc("/poll/{id:[0-9]+}/vote/", votePoll).Methods("POST")
 	r.HandleFunc("/poll/{id:[0-9]+}/r/", pollResults).Methods("GET")
-	http.Handle("/", r)
-	log.Println("server started.")
+	// log.Println("server started.")
 	if !strings.HasPrefix(*flagListen, ":") {
 		*flagListen = fmt.Sprintf(":%s", *flagListen)
 	}
-	err := http.ListenAndServe(*flagListen, nil)
+	// err := http.ListenAndServe(*flagListen, nil)
+	err := gracehttp.Serve(&http.Server{Addr: *flagListen, Handler: r})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, *flagListen)
