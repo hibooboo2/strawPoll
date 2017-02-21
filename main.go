@@ -9,11 +9,12 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-var flagListen = flag.String("l", ":8080", "Used to define which port is listened on.")
+var flagListen = flag.String("l", os.Getenv("PORT"), "Used to define which port is listened on.")
 var logs = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
 
 func init() {
@@ -25,7 +26,6 @@ func init() {
 }
 
 func main() {
-	log.Println(os.Getenv("PORT"))
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
@@ -34,7 +34,14 @@ func main() {
 	r.HandleFunc("/poll/{id:[0-9]+}/r/", pollResults).Methods("GET")
 	http.Handle("/", r)
 	log.Println("server started.")
-	http.ListenAndServe(*flagListen, nil)
+	if !strings.HasPrefix(*flagListen, ":") {
+		*flagListen = fmt.Sprintf(":%s", *flagListen)
+	}
+	err := http.ListenAndServe(*flagListen, nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, *flagListen)
+	}
 }
 
 func viewPoll(w http.ResponseWriter, req *http.Request) {
