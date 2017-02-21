@@ -29,6 +29,10 @@ func main() {
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
+	r.HandleFunc("/kill/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		os.Exit(0)
+	})
 	r.HandleFunc("/poll/{id:[0-9]+}/", viewPoll).Methods("GET")
 	r.HandleFunc("/poll/{id:[0-9]+}/vote/", votePoll).Methods("POST")
 	r.HandleFunc("/poll/{id:[0-9]+}/r/", pollResults).Methods("GET")
