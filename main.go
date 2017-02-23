@@ -13,6 +13,7 @@ import (
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/mux"
+	"github.com/skratchdot/open-golang/open"
 )
 
 var flagListen = flag.String("l", os.Getenv("PORT"), "Used to define which port is listened on.")
@@ -41,6 +42,7 @@ func main() {
 		*flagListen = fmt.Sprintf(":%s", *flagListen)
 	}
 	// err := http.ListenAndServe(*flagListen, nil)
+	go open.Start("http://localhost" + *flagListen)
 	err := gracehttp.Serve(&http.Server{Addr: *flagListen, Handler: r})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
