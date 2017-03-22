@@ -11,18 +11,31 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/mux"
 	"github.com/skratchdot/open-golang/open"
 )
 
-var flagListen = flag.String("l", os.Getenv("PORT"), "Used to define which port is listened on.")
-var logs = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
+var (
+	flagListen = flag.String("l", os.Getenv("PORT"), "Used to define which port is listened on.")
+	dbToUse    = flag.String("db", "scribble", "Used to define which poll storage is used")
+	logs       = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
+	t          = template.Must(template.ParseGlob("./view/*.html"))
+	polls      PollStorer
+)
 
 func init() {
 	flag.Parse()
 	if !*logs {
 		log.SetOutput(ioutil.Discard)
+	}
+	switch *dbToUse {
+	case "inmemory":
+		polls = &inMemoryPollStore{make(map[int]*Poll)}
+	case "scribble":
+		polls = NewScribbleStorer()
+	default:
+		log.Fatalln("Invalid db type: ", *dbToUse)
+
 	}
 }
 
@@ -31,19 +44,15 @@ func main() {
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", makePoll)
 	r.HandleFunc("/newpoll/", newPoll)
-	r.HandleFunc("/restart/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "kill -SIGUSR2 %v", os.Getpid())
-	})
 	r.HandleFunc("/poll/{id:[0-9]+}/", viewPoll).Methods("GET")
 	r.HandleFunc("/poll/{id:[0-9]+}/vote/", votePoll).Methods("POST")
 	r.HandleFunc("/poll/{id:[0-9]+}/r/", pollResults).Methods("GET")
-	// log.Println("server started.")
 	if !strings.HasPrefix(*flagListen, ":") {
 		*flagListen = fmt.Sprintf(":%s", *flagListen)
 	}
-	// err := http.ListenAndServe(*flagListen, nil)
 	go open.Start("http://localhost" + *flagListen)
-	err := gracehttp.Serve(&http.Server{Addr: *flagListen, Handler: r})
+	log.Println("Starting on port: ", *flagListen)
+	err := http.ListenAndServe(*flagListen, r)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, *flagListen)
@@ -53,16 +62,16 @@ func main() {
 func viewPoll(w http.ResponseWriter, req *http.Request) {
 	log.Println("Viewing poll.")
 
-	t := template.New("baseTemplate")     // Create a template.
-	t, _ = t.ParseFiles("view/poll.html") // Parse template file.
-	pollId, err := strconv.Atoi(mux.Vars(req)["id"])
+	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		t := template.New("main")              // Create a template.
-		t, _ = t.ParseFiles("view/index.html") // Parse template file.
-		t.ExecuteTemplate(w, "main", nil)      // merge.
+		t.ExecuteTemplate(w, "main", nil) // merge.
 		return
 	}
-	thePoll := polls[pollId]
+	thePoll, ok := polls.Get(pollID)
+	if !ok {
+		t.ExecuteTemplate(w, "main", nil) // merge.
+		return
+	}
 	t.ExecuteTemplate(w, "poll", thePoll) // merge.
 	log.Println("Viewed poll.")
 
@@ -76,11 +85,11 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 
 	t := template.New("baseTemplate")        // Create a template.
 	t, _ = t.ParseFiles("view/results.html") // Parse template file.
-	pollId, err := strconv.Atoi(mux.Vars(req)["id"])
+	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		return
 	}
-	thePoll := polls[pollId]
+	thePoll, _ := polls.Get(pollID)
 	log.Println(req.PostFormValue("alreadyVoted"))
 	thePoll.AlreadyVoted = req.URL.Query().Get("alreadyVoted") == "true"
 	if thePoll.AlreadyVoted {
@@ -99,26 +108,17 @@ func votePoll(w http.ResponseWriter, req *http.Request) {
 	}
 
 	vars := mux.Vars(req)
-	pollId, err := strconv.Atoi(vars["id"])
+	pollID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		panic("shit")
 	}
-	if polls[pollId].PerIp && polls[pollId].IPSUsed[req.RemoteAddr] {
-		log.Println("Duped ip: " + req.RemoteAddr)
-		http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/?alreadyVoted=true", pollId), http.StatusSeeOther)
+	voted := polls.Vote(pollID, req.PostFormValue("Answer"), req.RemoteAddr)
+	if !voted {
+		log.Println("Unable to vote. Probably already voted: " + req.RemoteAddr)
+		http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/?alreadyVoted=true", pollID), http.StatusSeeOther)
 		return
 	}
-	theAnswers := polls[pollId].Answers
-	chosenAnswer := req.PostFormValue("Answer")
-	for _, ans := range theAnswers {
-		if ans.Value == chosenAnswer {
-			ans.Total = ans.Total + 1
-		}
-	}
-	if polls[pollId].PerIp {
-		polls[pollId].IPSUsed[req.RemoteAddr] = true
-	}
-	http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/", pollId), http.StatusSeeOther)
+	http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/", pollID), http.StatusSeeOther)
 }
 
 func newPoll(w http.ResponseWriter, req *http.Request) {
@@ -128,16 +128,13 @@ func newPoll(w http.ResponseWriter, req *http.Request) {
 	}
 	t := template.New("baseTemplate")     // Create a template.
 	t, _ = t.ParseFiles("view/poll.html") // Parse template file.
-	aPoll := &Poll{
-		Question: req.PostFormValue("question"),
-		Answers:  removeBlanks(req.Form["option"]),
-		IPSUsed:  make(map[string]bool),
-		PerIp:    req.PostFormValue("perIP") == "on",
+	id, err := polls.New(req.PostFormValue("question"), req.Form["option"], req.PostFormValue("PerIP") == "on")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	storePoll(aPoll)
-	http.Redirect(w, req, fmt.Sprintf("/poll/%d/", aPoll.Id), http.StatusSeeOther)
+	http.Redirect(w, req, fmt.Sprintf("/poll/%d/", id), http.StatusSeeOther)
 	log.Println("New poll made")
-
 }
 
 func makePoll(w http.ResponseWriter, req *http.Request) {
@@ -146,36 +143,12 @@ func makePoll(w http.ResponseWriter, req *http.Request) {
 	t.ExecuteTemplate(w, "main", nil)      // merge.
 }
 
-type Poll struct {
-	Question     string
-	Answers      []*Answer
-	Multiselect  bool
-	PerIp        bool
-	PerBrowser   bool
-	Id           int
-	IPSUsed      map[string]bool
-	AlreadyVoted bool
-	IP           string
-}
-type Answer struct {
-	Value string
-	Total int
-}
-
-func removeBlanks(theStrings []string) []*Answer {
-	nonblank := []*Answer{}
+func answerStringsToAnswers(theStrings []string) []Answer {
+	nonblank := []Answer{}
 	for _, aString := range theStrings {
 		if len(aString) > 0 {
-			nonblank = append(nonblank, &Answer{Value: aString, Total: 0})
+			nonblank = append(nonblank, Answer{Value: aString, Total: 0})
 		}
 	}
 	return nonblank
-}
-
-var polls map[int]*Poll = make(map[int]*Poll)
-
-func storePoll(thePoll *Poll) int {
-	thePoll.Id = len(polls)
-	polls[thePoll.Id] = thePoll
-	return thePoll.Id
 }
