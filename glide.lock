@@ -1,0 +1,16 @@
+hash: bd7279f38ed93b17c3dc55aa16e87b9be5af21737118c51bd2ce9a3fd6b0144f
+updated: 2017-06-29T17:53:41.950653337Z
+imports:
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: 8c683ee571b6ee7ffc9f1cafd13103c422e71cbf
+- name: github.com/jcelliott/lumber
+  version: dd349441af25132d146d7095c6693a15431fc9b1
+- name: github.com/nanobox-io/golang-scribble
+  version: da3a159a462297745592fd615d4bcebec94b54c6
+- name: github.com/skratchdot/open-golang
+  version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
+  subpackages:
+  - open
+testImports: []

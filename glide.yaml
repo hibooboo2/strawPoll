@@ -1,0 +1,7 @@
+package: .
+import:
+- package: github.com/gorilla/mux
+- package: github.com/nanobox-io/golang-scribble
+- package: github.com/skratchdot/open-golang
+  subpackages:
+  - open

@@ -1,4 +1,3 @@
 straws
 strawPoll
-vendor/*
-!vendor.json
+vendor/
