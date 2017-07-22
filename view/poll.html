@@ -6,19 +6,19 @@
 </head>
 <body>
 	<h1>{{.Question}}</h1>
-	<form action="/poll/{{.Id}}/vote/" method="post" enctype="form-data">
+	<form action="/poll/{{.ID}}/vote/" method="post" enctype="form-data">
 		<ul>
 			{{if .Answers}}
-					{{range .Answers}}
+					{{range $i, $e := .Answers}}
 						<li>
-							<input type="radio" name="Answer" value="{{.Value}}" />  {{.Value}}
+							<input type="radio" name="Answer" value="{{$i}}" />  {{$e.Value}}
 						</li>
 					{{end}}
 			{{end}}
 		</ul>
 		<button type="submit">Vote!</button>
 	</form>
-	<a href="/poll/{{.Id}}/r/">Results</a>	
+	<a href="/poll/{{.Id}}/r/">Results</a>
 </body>
 </html>
 {{end}}

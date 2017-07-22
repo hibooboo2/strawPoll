@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	flagListen = flag.String("l", os.Getenv("PORT"), "Used to define which port is listened on.")
+	flagListen = flag.String("l", "8080", "Used to define which port is listened on.")
 	dbToUse    = flag.String("db", "scribble", "Used to define which poll storage is used")
 	logs       = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
 	t          = template.Must(template.ParseGlob("./view/*.html"))
@@ -64,15 +64,22 @@ func viewPoll(w http.ResponseWriter, req *http.Request) {
 
 	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		t.ExecuteTemplate(w, "main", nil) // merge.
+		log.Println(err)
+		err = t.ExecuteTemplate(w, "main", nil) // merge.
+		log.Println(err)
 		return
 	}
 	thePoll, ok := polls.Get(pollID)
 	if !ok {
-		t.ExecuteTemplate(w, "main", nil) // merge.
+		log.Println(ok)
+		err = t.ExecuteTemplate(w, "main", nil) // merge.
+		log.Println(err)
 		return
 	}
-	t.ExecuteTemplate(w, "poll", thePoll) // merge.
+	err = t.ExecuteTemplate(w, "poll", thePoll) // merge.
+	if err != nil {
+		log.Println(err)
+	}
 	log.Println("Viewed poll.")
 
 }
