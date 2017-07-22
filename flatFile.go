@@ -34,7 +34,7 @@ func (ps *scribblePollStorer) New(question string, answers []string, PerIP bool)
 	if err != nil {
 		log.Println("No next id found.", err)
 	}
-	p.Id = id
+	p.ID = id
 	err = ps.d.Write("poll", fmt.Sprintf("%d", id), p)
 	if err != nil {
 		return 0, err
@@ -44,7 +44,7 @@ func (ps *scribblePollStorer) New(question string, answers []string, PerIP bool)
 	if err != nil {
 		panic(err)
 	}
-	return p.Id, nil
+	return p.ID, nil
 }
 
 //Get get poll by id
@@ -58,7 +58,7 @@ func (ps *scribblePollStorer) Get(id int) (Poll, bool) {
 }
 
 //Vote vote in a poll. Return true if your vote was saved and used false otherwise.
-func (ps *scribblePollStorer) Vote(id int, answer string, ip string) bool {
+func (ps *scribblePollStorer) Vote(id int, answer int, ip string) bool {
 	poll := Poll{}
 	err := ps.d.Read("poll", fmt.Sprintf("%d", id), &poll)
 	if err != nil {
@@ -67,19 +67,17 @@ func (ps *scribblePollStorer) Vote(id int, answer string, ip string) bool {
 	if poll.PerIP && poll.IPSUsed[ip] {
 		return false
 	}
-	for i := range poll.Answers {
-		if poll.Answers[i].Value == answer {
-			poll.Answers[i].Total++
-			if poll.PerIP {
-				poll.IPSUsed[ip] = true
-			}
-			err := ps.d.Write("poll", fmt.Sprintf("%d", poll.Id), poll)
-			if err != nil {
-				log.Println("Failed to save poll after voting. Vote lost: ", id, answer, ip)
-				return false
-			}
-			return true
+	if len(poll.Answers) > answer {
+		poll.Answers[answer].Total++
+		if poll.PerIP {
+			poll.IPSUsed[ip] = true
 		}
+		err := ps.d.Write("poll", fmt.Sprintf("%d", poll.ID), poll)
+		if err != nil {
+			log.Println("Failed to save poll after voting. Vote lost: ", id, answer, ip)
+			return false
+		}
+		return true
 	}
 	log.Println("Tried to vote with an invalid answer")
 	return false

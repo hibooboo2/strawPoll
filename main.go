@@ -112,7 +112,12 @@ func votePoll(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic("shit")
 	}
-	voted := polls.Vote(pollID, req.PostFormValue("Answer"), strings.Split(req.RemoteAddr,":")[0])
+	n, err := strconv.Atoi(req.PostFormValue("Answer"))
+	if err != nil {
+		http.Error(w, "Invalid answer", http.StatusBadRequest)
+		return
+	}
+	voted := polls.Vote(pollID, n, strings.Split(req.RemoteAddr, ":")[0])
 	if !voted {
 		log.Println("Unable to vote. Probably already voted: " + req.RemoteAddr)
 		http.Redirect(w, req, fmt.Sprintf("/poll/%d/r/?alreadyVoted=true", pollID), http.StatusSeeOther)

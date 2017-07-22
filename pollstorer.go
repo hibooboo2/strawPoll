@@ -4,5 +4,5 @@ package main
 type PollStorer interface {
 	New(question string, answers []string, PerIP bool) (int, error)
 	Get(id int) (Poll, bool)
-	Vote(id int, answer, ip string) bool
+	Vote(id int, answer int, ip string) bool
 }

@@ -7,7 +7,7 @@ type Poll struct {
 	Multiselect  bool
 	PerIP        bool
 	PerBrowser   bool
-	Id           int
+	ID           int
 	IPSUsed      map[string]bool
 	AlreadyVoted bool
 	IP           string
