@@ -1,4 +1,4 @@
-#Straw Poll Clone in GOLANG
+# Straw Poll Clone in GOLANG
 
 Create a Poll Struct
  - Poll has a question
