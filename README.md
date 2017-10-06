@@ -7,4 +7,4 @@
  - Restrict to Per ip / Per Browser 
  - View votes for poll.
 
-Still needs some real work. Do not use this.
+Still needs some real work. Do not use .  this.
