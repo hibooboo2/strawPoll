@@ -2,7 +2,7 @@
 
 Create a Poll Struct
  - Poll has a question
- - Answers.
+ - Answers
  - Poll is multi select or single select
  - Restrict to Per ip / Per Browser 
- - View votes for poll.
+ - View votes for poll
