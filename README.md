@@ -6,5 +6,3 @@ Create a Poll Struct
  - Poll is multi select or single select
  - Restrict to Per ip / Per Browser 
  - View votes for poll.
-
-** Testing CLA docusign**
