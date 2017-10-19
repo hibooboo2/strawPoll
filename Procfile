@@ -1,1 +1,1 @@
-web: strawPoll -db inmemory
+web: strawPoll -db inmemory -l $PORT -dontopen

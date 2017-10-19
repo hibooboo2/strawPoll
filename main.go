@@ -19,6 +19,7 @@ var (
 	flagListen = flag.String("l", "8080", "Used to define which port is listened on.")
 	dbToUse    = flag.String("db", "scribble", "Used to define which poll storage is used")
 	logs       = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
+	autoopen   = flag.Bool("dontopen", false, "Don't Autoopen polls")
 	t          = template.Must(template.ParseGlob("./view/*.html"))
 	polls      PollStorer
 )
@@ -35,7 +36,6 @@ func init() {
 		polls = NewScribbleStorer()
 	default:
 		log.Fatalln("Invalid db type: ", *dbToUse)
-
 	}
 }
 
@@ -50,7 +50,9 @@ func main() {
 	if !strings.HasPrefix(*flagListen, ":") {
 		*flagListen = fmt.Sprintf(":%s", *flagListen)
 	}
-	go open.Start("http://localhost" + *flagListen)
+	if !*autoopen {
+		go open.Start("http://localhost" + *flagListen)
+	}
 	log.Println("Starting on port: ", *flagListen)
 	err := http.ListenAndServe(*flagListen, r)
 	if err != nil {
