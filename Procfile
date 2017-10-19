@@ -1,1 +1,1 @@
-web: strawPoll
+web: strawPoll -db inmemory

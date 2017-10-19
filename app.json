@@ -1,0 +1,11 @@
+{
+  "name": "Straw Poll",
+  "description": "A self hosted strawpoll clone.",
+  "keywords": [
+    "strawpoll",
+    "golang",
+    "go"
+  ],
+  "website": "https://github.com/hibooboo2/strawPoll",
+  "success_url": "/"
+}
