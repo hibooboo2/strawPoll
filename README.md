@@ -1,5 +1,4 @@
-#Straw Poll Clone in GOLANG
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+# Straw Poll Clone in GOLANG [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 Create a Poll Struct
  - Poll has a question
