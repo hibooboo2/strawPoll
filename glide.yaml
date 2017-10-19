@@ -1,9 +1,9 @@
-package: .
+package: github.com/hibooboo2/strawPoll
 import:
 - package: github.com/gorilla/mux
+- package: github.com/jmoiron/sqlx
+- package: github.com/lib/pq
 - package: github.com/nanobox-io/golang-scribble
 - package: github.com/skratchdot/open-golang
   subpackages:
   - open
-- package: github.com/jmoiron/sqlx
-- package: github.com/lib/pq
