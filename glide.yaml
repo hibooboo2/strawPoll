@@ -5,3 +5,5 @@ import:
 - package: github.com/skratchdot/open-golang
   subpackages:
   - open
+- package: github.com/jmoiron/sqlx
+- package: github.com/lib/pq
