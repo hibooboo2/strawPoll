@@ -3,6 +3,10 @@
 <html>
 <head>
 	<title>A question</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+	<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
 	<script type="text/javascript">
 		function newOption(){
 			options = document.getElementById("options")
@@ -20,9 +24,26 @@
 
 		}
 	</script>
+	<style>
+	.questions{
+		margin: 0 auto;
+		width: 50%;
+		background-color: #11bf1878;
+		border-radius: .3rem;
+		padding: 4rem 2rem;
+
+	}
+
+	body {
+		margin: auto;
+		width: 100%;
+		height: 100%;
+	}
+	</style>
 </head>
 <body>
 
+	<div class="questions jumbotron">
 		<form action="/newpoll/" method="post" enctype="form-data">
 			<input type="text" name="question" placeholder="Type question here, options below.">
 			<br/>
@@ -34,12 +55,13 @@
 					<input type="text" name="option" placeholder="Enter poll option...">
 				</li>
 				<li>
-		 			<input type="text" name="option" placeholder="Enter poll option..." onfocus="newOption()" id="lastInput">
-		 		</li>
+					<input type="text" name="option" placeholder="Enter poll option..." onfocus="newOption()" id="lastInput">
+				</li>
 			</ul>
 			<input type="checkbox" name="PerIP"/>
-			<button type="submit">Create poll</button>
+			<button class="btn btn-primary" type="submit">Create poll</button>
 		</form>
+	</div>
 </body>
 </html>
 {{end}}

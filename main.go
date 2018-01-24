@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/skratchdot/open-golang/open"
@@ -37,6 +38,17 @@ func init() {
 	default:
 		log.Fatalln("Invalid db type: ", *dbToUse)
 	}
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			temp, err := template.ParseGlob("./view/*.html")
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			t = temp
+		}
+	}()
 }
 
 func main() {
@@ -92,8 +104,6 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Nope dip")
 	}
 
-	t := template.New("baseTemplate")        // Create a template.
-	t, _ = t.ParseFiles("view/results.html") // Parse template file.
 	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		return
@@ -106,7 +116,11 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 	} else {
 		thePoll.IP = ""
 	}
-	t.ExecuteTemplate(w, "results", thePoll) // merge.
+	err = t.ExecuteTemplate(w, "results", thePoll) // merge.
+	if err != nil {
+		log.Println(err)
+		fmt.Fprintln(w, err.Error())
+	}
 }
 
 func votePoll(w http.ResponseWriter, req *http.Request) {
