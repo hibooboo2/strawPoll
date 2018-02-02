@@ -9,5 +9,3 @@ Create a Poll Struct
  - Have more backends. 
  
  
- 
- 
