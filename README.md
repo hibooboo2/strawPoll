@@ -8,4 +8,3 @@ Create a Poll Struct
  - View votes for poll.
  - Have more backends. 
  
- 
