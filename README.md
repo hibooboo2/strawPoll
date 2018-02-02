@@ -7,3 +7,7 @@ Create a Poll Struct
  - Restrict to Per ip / Per Browser
  - View votes for poll.
  - Have more backends. 
+ 
+ 
+ 
+ 
