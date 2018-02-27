@@ -21,7 +21,7 @@ var (
 	dbToUse    = flag.String("db", "scribble", "Used to define which poll storage is used")
 	logs       = flag.Bool("showlogs", false, "set to show logs.Other wise now logs.")
 	autoopen   = flag.Bool("dontopen", false, "Don't Autoopen polls")
-	t          = template.Must(template.ParseGlob("./view/*.html"))
+	t          = template.Must(getTemplates())
 	polls      PollStorer
 )
 
@@ -41,7 +41,7 @@ func init() {
 	go func() {
 		for {
 			time.Sleep(time.Second)
-			temp, err := template.ParseGlob("./view/*.html")
+			temp, err := getTemplates()
 			if err != nil {
 				log.Println(err)
 				continue
@@ -49,6 +49,11 @@ func init() {
 			t = temp
 		}
 	}()
+}
+
+func getTemplates() (*template.Template, error) {
+
+	return temp, fmt.Errorf("Implement this")
 }
 
 func main() {
@@ -154,8 +159,6 @@ func newPoll(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "Nope dip")
 	}
-	t := template.New("baseTemplate")     // Create a template.
-	t, _ = t.ParseFiles("view/poll.html") // Parse template file.
 	id, err := polls.New(req.PostFormValue("question"), req.Form["option"], req.PostFormValue("PerIP") == "on")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -166,9 +169,7 @@ func newPoll(w http.ResponseWriter, req *http.Request) {
 }
 
 func makePoll(w http.ResponseWriter, req *http.Request) {
-	t := template.New("main")              // Create a template.
-	t, _ = t.ParseFiles("view/index.html") // Parse template file.
-	t.ExecuteTemplate(w, "main", nil)      // merge.
+	t.ExecuteTemplate(w, "main", nil) // merge.
 }
 
 func answerStringsToAnswers(theStrings []string) []Answer {
