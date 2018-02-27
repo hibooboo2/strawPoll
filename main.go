@@ -52,8 +52,22 @@ func init() {
 }
 
 func getTemplates() (*template.Template, error) {
-
-	return temp, fmt.Errorf("Implement this")
+	files, err := AssetDir("view")
+	if err != nil {
+		return nil, err
+	}
+	temp := template.New("base")
+	for _, f := range files {
+		data, err := Asset("view/" + f)
+		if err != nil {
+			return nil, err
+		}
+		temp, err = temp.Parse(string(data))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return temp, nil
 }
 
 func main() {
