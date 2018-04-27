@@ -98,29 +98,24 @@ func viewPoll(w http.ResponseWriter, req *http.Request) {
 	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		log.Println(err)
-		err = t.ExecuteTemplate(w, "main", nil) // merge.
-		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 	thePoll, ok := polls.Get(pollID)
 	if !ok {
-		log.Println(ok)
-		err = t.ExecuteTemplate(w, "main", nil) // merge.
-		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 	err = t.ExecuteTemplate(w, "poll", thePoll) // merge.
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("Viewed poll.")
-
 }
 
 func pollResults(w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
-		fmt.Fprintf(w, "Nope dip")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 
 	pollID, err := strconv.Atoi(mux.Vars(req)["id"])

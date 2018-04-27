@@ -6,6 +6,8 @@ type inMemoryPollStore struct {
 	data map[int]*Poll
 }
 
+var _ PollStorer = &inMemoryPollStore{}
+
 // Store stores the poll in the underlying data store.
 func (ps *inMemoryPollStore) New(question string, answers []string, PerIP bool) (int, error) {
 	p := &Poll{
