@@ -22,13 +22,7 @@ func NewScribbleStorer() PollStorer {
 }
 
 // Store stores the poll in the underlying data store.
-func (ps *scribblePollStorer) New(question string, answers []string, PerIP bool) (int, error) {
-	p := &Poll{
-		Question: question,
-		Answers:  answerStringsToAnswers(answers),
-		IPSUsed:  make(map[string]bool),
-		PerIP:    PerIP,
-	}
+func (ps *scribblePollStorer) New(p *Poll) (int, error) {
 	var id int
 	err := ps.d.Read("poll", "nextID", &id)
 	if err != nil {
@@ -64,21 +58,13 @@ func (ps *scribblePollStorer) Vote(id int, answer int, ip string) bool {
 	if err != nil {
 		return false
 	}
-	if poll.PerIP && poll.IPSUsed[ip] {
+	if !poll.Vote(answer, ip) {
 		return false
 	}
-	if len(poll.Answers) > answer {
-		poll.Answers[answer].Total++
-		if poll.PerIP {
-			poll.IPSUsed[ip] = true
-		}
-		err := ps.d.Write("poll", fmt.Sprintf("%d", poll.ID), poll)
-		if err != nil {
-			log.Println("Failed to save poll after voting. Vote lost: ", id, answer, ip)
-			return false
-		}
-		return true
+	err = ps.d.Write("poll", fmt.Sprintf("%d", poll.ID), poll)
+	if err != nil {
+		log.Println("Failed to save poll after voting. Vote lost: ", id, answer, ip)
+		return false
 	}
-	log.Println("Tried to vote with an invalid answer")
-	return false
+	return true
 }

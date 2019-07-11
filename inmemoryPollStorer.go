@@ -1,7 +1,5 @@
 package main
 
-import "log"
-
 type inMemoryPollStore struct {
 	data map[int]*Poll
 }
@@ -9,13 +7,7 @@ type inMemoryPollStore struct {
 var _ PollStorer = &inMemoryPollStore{}
 
 // Store stores the poll in the underlying data store.
-func (ps *inMemoryPollStore) New(question string, answers []string, PerIP bool) (int, error) {
-	p := &Poll{
-		Question: question,
-		Answers:  answerStringsToAnswers(answers),
-		IPSUsed:  make(map[string]bool),
-		PerIP:    PerIP,
-	}
+func (ps *inMemoryPollStore) New(p *Poll) (int, error) {
 	p.ID = len(ps.data)
 	ps.data[p.ID] = p
 	return p.ID, nil
@@ -36,17 +28,5 @@ func (ps *inMemoryPollStore) Vote(id int, answer int, ip string) bool {
 	if !ok {
 		return false
 	}
-	if poll.PerIP && poll.IPSUsed[ip] {
-		return false
-	}
-	theAnswers := poll.Answers
-	if len(theAnswers) > answer {
-		theAnswers[answer].Total++
-		if poll.PerIP {
-			poll.IPSUsed[ip] = true
-		}
-		return true
-	}
-	log.Println("Tried to vote with an invalid answer")
-	return false
+	return poll.Vote(answer, ip)
 }

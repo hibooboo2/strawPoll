@@ -27,6 +27,7 @@ var (
 
 func init() {
 	flag.Parse()
+	log.SetFlags(log.Lshortfile)
 	if !*logs {
 		log.SetOutput(ioutil.Discard)
 	}
@@ -35,6 +36,12 @@ func init() {
 		polls = &inMemoryPollStore{make(map[int]*Poll)}
 	case "scribble":
 		polls = NewScribbleStorer()
+	case "sqlite":
+		var err error
+		polls, err = NewDbPollStore()
+		if err != nil {
+			panic(err)
+		}
 	default:
 		log.Fatalln("Invalid db type: ", *dbToUse)
 	}
@@ -116,14 +123,22 @@ func pollResults(w http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	pollID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
+		log.Println("failed to parse poll id")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	thePoll, _ := polls.Get(pollID)
-	log.Println(req.PostFormValue("alreadyVoted"))
+	thePoll, got := polls.Get(pollID)
+	if !got {
+		log.Println("failed to get poll")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	thePoll.AlreadyVoted = req.URL.Query().Get("alreadyVoted") == "true"
 	if thePoll.AlreadyVoted {
 		thePoll.IP = req.RemoteAddr
@@ -168,8 +183,10 @@ func newPoll(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "Nope dip")
 	}
-	id, err := polls.New(req.PostFormValue("question"), req.Form["option"], req.PostFormValue("PerIP") == "on")
+	p := NewPoll(req.PostFormValue("question"), req.Form["option"], req.PostFormValue("PerIP") == "on")
+	id, err := polls.New(p)
 	if err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
